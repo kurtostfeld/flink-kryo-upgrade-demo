@@ -8,19 +8,21 @@ import com.esotericsoftware.kryo.kryo5.io.Output;
 import java.io.Serializable;
 
 public class IntOpaqueWrapperKryo5Serializer extends Serializer<IntOpaqueWrapper> implements Serializable {
-    private static final long SIGNATURE = 516584326201829817L;
+    // We want to fail fast and clearly if this attempts to deserialize data that was not
+    // serialized by this serializer.
+    private static final long KRYO_V5_SIGNATURE = 516584326201829817L;
 
     @Override
     public void write(Kryo kryo, Output output, IntOpaqueWrapper object) {
-        output.writeLong(SIGNATURE);
+        output.writeLong(KRYO_V5_SIGNATURE);
         output.writeInt(transform(object.get()));
     }
 
     @Override
     public IntOpaqueWrapper read(Kryo kryo, Input input, Class<? extends IntOpaqueWrapper> type) {
         long signatureMatch = input.readLong();
-        if (signatureMatch != SIGNATURE) {
-            throw new IllegalArgumentException(String.format("IntOpaqueWrapperKryo5Serializer. signature does not match. %d <> %d", SIGNATURE, signatureMatch));
+        if (signatureMatch != KRYO_V5_SIGNATURE) {
+            throw new IllegalArgumentException(String.format("IntOpaqueWrapperKryo5Serializer. signature does not match. %d <> %d", KRYO_V5_SIGNATURE, signatureMatch));
         }
         int i1 = input.readInt();
         int i2 = reverseTransform(i1);

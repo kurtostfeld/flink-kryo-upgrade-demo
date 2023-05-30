@@ -14,6 +14,14 @@ public class IntOpaqueWrapper {
         return new IntOpaqueWrapper(i);
     }
 
+    public static IntOpaqueWrapper sum(IntOpaqueWrapper a, IntOpaqueWrapper b) {
+        return new IntOpaqueWrapper(a.get() + b.get());
+    }
+
+    public IntOpaqueWrapper getModulus5() {
+        return new IntOpaqueWrapper(get() % 5);
+    }
+
     @Override
     public String toString() {
         return "IntOpaqueWrapper{" +

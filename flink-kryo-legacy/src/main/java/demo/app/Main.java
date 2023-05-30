@@ -46,20 +46,25 @@ public class Main {
                 stream.name("number-sequence-stream");
                 stream.setParallelism(1);
 
-                final SingleOutputStreamOperator<Long> pausedStream = stream.map(l -> { Thread.sleep(5000); return l; });
+                final TypeInformation<IntOpaqueWrapper> intOpaqueWrapperTypeInformation = new GenericTypeInfo<>(IntOpaqueWrapper.class);
+                final SingleOutputStreamOperator<IntOpaqueWrapper> wrappedIntegerStream = stream.map(
+                        l -> IntOpaqueWrapper.create((int) ((long) l)), intOpaqueWrapperTypeInformation);
+                wrappedIntegerStream.name("wrapped-integer-stream");
+                wrappedIntegerStream.setParallelism(1);
+
+                final SingleOutputStreamOperator<IntOpaqueWrapper> pausedStream = wrappedIntegerStream.map(l -> { Thread.sleep(5000); return l; });
                 pausedStream.name("paused-stream");
                 pausedStream.setParallelism(1);
 
-                final TypeInformation<IntOpaqueWrapper> intOpaqueWrapperTypeInformation = new GenericTypeInfo<>(IntOpaqueWrapper.class);
-                final KeyedStream<Long, IntOpaqueWrapper> keyedStream = stream.keyBy(
-                        l -> IntOpaqueWrapper.create((int) (l % 5)), intOpaqueWrapperTypeInformation);
+                final KeyedStream<IntOpaqueWrapper, IntOpaqueWrapper> keyedStream = pausedStream.keyBy(
+                        IntOpaqueWrapper::getModulus5, intOpaqueWrapperTypeInformation);
 
-                final SingleOutputStreamOperator<Long> processedStream = keyedStream.process(new DemoProcessingFunction());
+                final SingleOutputStreamOperator<IntOpaqueWrapper> processedStream = keyedStream.process(new DemoProcessingFunction());
                 processedStream.name("processed-stream");
                 processedStream.setParallelism(1);
 
-                Sink<Long> sink = new LogSink();
-                DataStreamSink<Long> dataStreamSink = processedStream.sinkTo(sink);
+                Sink<IntOpaqueWrapper> sink = new LogSink();
+                DataStreamSink<IntOpaqueWrapper> dataStreamSink = processedStream.sinkTo(sink);
                 dataStreamSink.name("log-sink");
                 dataStreamSink.setParallelism(1);
 
@@ -80,18 +85,18 @@ public class Main {
         logger.info("exiting...");
     }
 
-    public static class LogSink implements Sink<Long> {
+    public static class LogSink implements Sink<IntOpaqueWrapper> {
         @Override
-        public SinkWriter<Long> createWriter(InitContext context) {
+        public SinkWriter<IntOpaqueWrapper> createWriter(InitContext context) {
             return new LogSinkWriter();
         }
     }
 
-    public static class LogSinkWriter implements SinkWriter<Long> {
+    public static class LogSinkWriter implements SinkWriter<IntOpaqueWrapper> {
         final Logger logger = LoggerFactory.getLogger(LogSinkWriter.class);
 
         @Override
-        public void write(Long element, Context context) {
+        public void write(IntOpaqueWrapper element, Context context) {
             logger.info("write {}", element);
         }
 

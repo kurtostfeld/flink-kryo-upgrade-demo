@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.apache.flink", "flink-streaming-java", "1.17.0")
+    implementation("org.apache.flink", "flink-streaming-java", "1.17.1")
 }
 
 application {
