@@ -2,7 +2,10 @@ package demo.app;
 
 import demo.data.IntOpaqueWrapper;
 import demo.data.IntOpaqueWrapperKryo2Serializer;
+import demo.data.IntOpaqueWrapperKryo5Serializer;
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -10,7 +13,11 @@ import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.connector.source.lib.NumberSequenceSource;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
+import org.apache.flink.client.cli.CliFrontend;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.DeploymentOptions;
+import org.apache.flink.runtime.jobgraph.RestoreMode;
+import org.apache.flink.runtime.jobgraph.SavepointConfigOptions;
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -21,9 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Main {
-    public final static String KRYO_V2_NATIVE_SAVEPOINT_PATH = "../native-savepoints/savepoint-0bed3c-7f053b08f084";
-    public final static String KRYO_V5_NATIVE_SAVEPOINT_PATH = "../native-savepoints/savepoint-0fc565-afb0365ce176";
+//    public final static String KRYO_V2_NATIVE_SAVEPOINT_PATH = "../native-savepoints/savepoint-0bed3c-7f053b08f084";
+//    public final static String KRYO_V5_NATIVE_SAVEPOINT_PATH = "../native-savepoints/savepoint-51d0d3-da9ea6535060";
 
+    @SuppressWarnings("deprecation")
     public static void main(String[] args) {
         final Logger logger = LoggerFactory.getLogger(Main.class);
         try {
@@ -31,9 +39,9 @@ public class Main {
                 logger.info("Starting up.");
 
                 final Configuration flinkConfiguration = new Configuration();
-
+//                flinkConfiguration.set(DeploymentOptions.ATTACHED, false);
                 // Uncomment to debug restoring from savepoint.
-//                flinkConfiguration.set(SavepointConfigOptions.SAVEPOINT_PATH, KRYO_V5_SAVEPOINT_PATH);
+//                flinkConfiguration.set(SavepointConfigOptions.SAVEPOINT_PATH, KRYO_V5_NATIVE_SAVEPOINT_PATH);
 //                flinkConfiguration.set(SavepointConfigOptions.SAVEPOINT_IGNORE_UNCLAIMED_STATE, false);
 //                flinkConfiguration.set(SavepointConfigOptions.RESTORE_MODE, RestoreMode.NO_CLAIM);
 //                logger.info("SAVEPOINT_PATH={}", flinkConfiguration.get(SavepointConfigOptions.SAVEPOINT_PATH));
@@ -51,6 +59,13 @@ public class Main {
                 streamEnv.addDefaultKryoSerializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo2Serializer.class);
                 streamEnv.registerTypeWithKryoSerializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo2Serializer.class);
                 streamEnv.registerTypeWithKryoSerializer(IntOpaqueWrapper.class, new IntOpaqueWrapperKryo2Serializer());
+
+                executionConfig.addDefaultKryo5Serializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo5Serializer.class);
+                executionConfig.registerTypeWithKryo5Serializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo5Serializer.class);
+                executionConfig.registerTypeWithKryo5Serializer(IntOpaqueWrapper.class, new IntOpaqueWrapperKryo5Serializer());
+                streamEnv.addDefaultKryo5Serializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo5Serializer.class);
+                streamEnv.registerTypeWithKryo5Serializer(IntOpaqueWrapper.class, IntOpaqueWrapperKryo5Serializer.class);
+                streamEnv.registerTypeWithKryo5Serializer(IntOpaqueWrapper.class, new IntOpaqueWrapperKryo5Serializer());
 
                 final NumberSequenceSource source = new NumberSequenceSource(1, 20);
                 final DataStreamSource<Long> stream = streamEnv.fromSource(source, WatermarkStrategy.noWatermarks(), "number-sequence-source");
@@ -80,8 +95,9 @@ public class Main {
                 dataStreamSink.setParallelism(1);
 
                 logger.info("Executing streaming app.");
-                streamEnv.execute("flink-kryo-demo");
-                logger.info("Flink execute() complete.");
+                JobExecutionResult jobExecutionResult = streamEnv.execute("flink-kryo-demo");
+                JobID jobID = jobExecutionResult.getJobID();
+                logger.info("Flink execute() complete. jobID={}", jobID);
             } catch (Exception e) {
                 System.out.printf("println top level exception. %s: %s%n",
                         e.getClass().getSimpleName(), e.getMessage());
