@@ -34,7 +34,6 @@ public class Main {
                 streamEnv.setStateBackend(new HashMapStateBackend());
 
                 executionConfig.enableForceKryo();
-                executionConfig.registerKryo5Type(DemoRecord.class);
 
                 final NumberSequenceSource source = new NumberSequenceSource(0, 19);
                 final DataStreamSource<Long> stream = streamEnv.fromSource(source, WatermarkStrategy.noWatermarks(), "number-sequence-source");
