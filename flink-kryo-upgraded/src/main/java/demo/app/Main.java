@@ -13,6 +13,7 @@ import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.connector.source.lib.NumberSequenceSource;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
+import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -36,6 +37,7 @@ public class Main {
 
                 final Configuration flinkConfiguration = new Configuration();
                 flinkConfiguration.set(ExecutionCheckpointingOptions.ENABLE_CHECKPOINTS_AFTER_TASKS_FINISH, true);
+                flinkConfiguration.set(CheckpointingOptions.INCREMENTAL_CHECKPOINTS, true);
 
                 final StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.getExecutionEnvironment(flinkConfiguration);
                 streamEnv.enableCheckpointing(1000);
